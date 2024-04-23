@@ -1,0 +1,47 @@
+#include <SoftwareSerial.h>
+#include <TinyGPS++.h>
+#include <Wire.h> // Include the Wire library for I2C communication
+#include <LiquidCrystal_I2C.h> // Include the LiquidCrystal_I2C library
+
+LiquidCrystal_I2C lcd(0x27, 16, 2); // Initialize the LCD with I2C address 0x27, 16 columns, and 2 rows
+
+float latitude, longitude; // create variables for latitude and longitude
+SoftwareSerial gpsSerial(8, 9); // rx, tx
+TinyGPSPlus gps; // create GPS object
+bool gpsDataReceived = false;
+
+void setup() {
+  Serial.begin(9600); // connect serial
+  lcd.begin(16, 2);
+  gpsSerial.begin(9600); // connect GPS sensor
+  lcd.print("GPS TRACKER");
+  delay(2000);
+  lcd.clear();
+}
+
+void loop() {
+  if (!gpsDataReceived) {
+    while (gpsSerial.available() > 0) {
+      if (gps.encode(gpsSerial.read())) {
+        if (gps.location.isUpdated()) {
+          Serial.print("LAT=");  Serial.println(gps.location.lat(), 6);
+          Serial.print("LONG="); Serial.println(gps.location.lng(), 6);
+          latitude = gps.location.lat();
+          longitude = gps.location.lng();
+          gpsDataReceived = true; // Set flag to true when GPS data received
+        }
+      }
+    }
+  }
+
+  if (gpsDataReceived) {
+    Serial.print("LATITUDE="); Serial.println(latitude, 6);
+    Serial.print("LONGITUDE="); Serial.println(longitude, 6);
+    lcd.clear();
+    lcd.print("LAT "); lcd.print(latitude, 6);
+    lcd.setCursor(0, 1);
+    lcd.print("LONG "); lcd.print(longitude, 6);
+    delay(1000);
+    gpsDataReceived = false; // Reset flag for next data reception
+  }
+}
